@@ -40,22 +40,14 @@
 (def tab-select-val  (r/atom 0))
 
 (def screen-width (.. js/window -screen -width))
+(def screen-height (.. js/window -screen -height))
 (def video-height (int (* screen-width (/ 9 16) )))
-
-
-
-(def data [{:position "right"
-            :type "text"
-            :text "变态反应科中的“变态”是指免疫机制失去常态，这个科室专门治疗呼吸系统、皮肤、五官、心血管、消化系统等器官的过敏性疾病，涉及过敏性鼻炎、儿童哮喘、过敏性皮肤病、荨麻疹、过敏性紫癜、花粉症等数十种疾病。"
-            :date (js/Date.)}
-           {:position "right"
-            :type "text"
-            :text "主要治疗呼吸系统、皮肤、心血管、消化系统等器官的过敏性疾病，涉及过敏性鼻炎、儿童哮喘、过敏性皮肤病、荨麻疹、过敏性紫癜、花粉症等数十种疾病。"
-            :date (js/Date.)}
-           {:position "left"
-            :type "text"
-            :text "Lorem ipsum dolor sit amet, consectetur adipisicing elit"
-            :date (js/Date.)}])
+(def tab-height 45)
+(def input-height 45)
+(def buttom-height (- screen-height
+                      video-height
+                      tab-height
+                      input-height))
 
 (defn msg->data [msgs]
   (mapv (fn [msg]
@@ -67,85 +59,95 @@
 
 (def current-msg (r/atom ""))
 
-
-
-
 (defn input-send []
   (r/as-element
    (let [classes (useStyles) ]
-     (js/console.log classes)
-     [:> Paper {:component "form"
-                :class-name (.-root classes)}
-      [:> InputBase {:placeholder "请输入您的发言"
-                     :on-change (fn [event ]
-                                  (prn "....")
-                                  (reset! current-msg (.. event -target -value) ))
-                     :class-name (.-input classes)}]
+     [:> Box {:align-self :flex-end}
+      [:> Paper {:component "form"
+                 :class-name (.-root classes)}
+       [:> InputBase {:placeholder "请输入您的发言"
+                      :on-change (fn [event ]
+                                   (prn "....")
+                                   (reset! current-msg (.. event -target -value) ))
+                      :class-name (.-input classes)}]
 
-      [:> Divider {:orientation "vertical"
-                   :class-name (.-divider classes)}]
-      [:> Button {:color "primary"
-                  :aria-label "directions"
-                  :onClick (fn []
-                             (prn "发出新消息...")
-                             (when-not (empty? @current-msg)
-                               (client/chsk-send! [:user/new-msg @current-msg])
-                               (reset! current-msg "")))}
-       "提交"
-       [:> DirectionsIcon]]])))
+       [:> Divider {:orientation "vertical"
+                    :class-name (.-divider classes)}]
+       [:> Button {:color "primary"
+                   :aria-label "directions"
+                   :onClick (fn []
+                              (prn "发出新消息...")
+                              (when-not (empty? @current-msg)
+                                (client/chsk-send! [:user/new-msg @current-msg])
+                                (reset! current-msg "")))}
+        "提交"
+        [:> DirectionsIcon]]]])))
 
 
 (defn message []
   (fn []
-    [:> Box
+    [:> Box #_{:height (str buttom-height "px")}
      [:> MessageList
       {:className "message-list"
        :lockable true
        :toBottomHeight "100%"
        :dataSource (msg->data @(rf/subscribe [:all-msg]))}]
-     [:> input-send]]))
+     ]))
+
+(defn buttom []
+  (if (zero? @tab-select-val)
+    [:img {:width "100%"
+           :src "/imgs/intro.jpg"}]
+    [message]))
+
+(defn input []
+  (when-not (zero? @tab-select-val)
+    [:> input-send]))
+
+
+(defn video []
+  [:> Box {:height (str video-height "px")
+           :display :flex
+           :width "100%"}
+   [:> Box {:width "100%"}
+    [:> VideoJsForReact
+     {:stype {:width "100%"}
+      :sourceChanged #(js/console.log %)
+      :onReady #(js/console.log "准备完毕" %)
+      :preload "auto"
+      :width (.. js/window -screen -width)
+      :autoplay true
+      :controls true
+      :playbackRates [1, 1.5, 2]
+
+      :sources [{:src "http://xhlive.3vyd.com/live/007.m3u8"
+                 ;;:src "http://devimages.apple.com/iphone/samples/bipbop/bipbopall.m3u8"
+                 :type 'application/x-mpegURL',
+                 :label 'HLS1',
+                 :withCredentials false,
+                 :res 960}]}]]])
+
+(defn tab []
+  [:> Box {:flex "1 0 auto"
+           :height "45px"}
+   [:> Tabs {:width "100%"
+             :value @tab-select-val
+             :on-change (fn [_ new-val]
+                          (reset! tab-select-val new-val))}
+    [:> Tab {:style {:width "50%"}
+             :label (r/as-element [:div {:style {:font-size :large}} "会议详情"])}]
+    [:> Tab {:style {:width "50%"}
+             :label (r/as-element [:div {:style {:font-size :large}} "互动"] )}]]])
 
 (defn home []
   [:> Box {:display :flex
+           :postition :relative
            :height "100vh"
            :flex-direction "column"}
-   [:> Box {:height (str video-height "px")
-            :display :flex
-            :width "100%"}
-    [:> Box {:width "100%"}
-     [:> VideoJsForReact
-      {:stype {:width "100%"}
-       :sourceChanged #(js/console.log %)
-       :onReady #(js/console.log "准备完毕" %)
-       :preload "auto"
-       :width (.. js/window -screen -width)
-       :autoplay true
-       :controls true
-       :playbackRates [1, 1.5, 2]
-
-       :sources [{:src "http://xhlive.3vyd.com/live/007.m3u8"
-                  ;;:src "http://devimages.apple.com/iphone/samples/bipbop/bipbopall.m3u8"
-                  :type 'application/x-mpegURL',
-                  :label 'HLS1',
-                  :withCredentials false,
-                  :res 960}]}]]]
-   [:> Box {:flex "1 0 auto"}
-    [:> Tabs {:width "100%"
-              :value @tab-select-val
-              :on-change (fn [_ new-val]
-                           (reset! tab-select-val new-val))}
-     [:> Tab {:style {:width "50%"}
-              :label (r/as-element [:div {:style {:font-size :large}} "会议详情"])}]
-     [:> Tab {:style {:width "50%"}
-              :label (r/as-element [:div {:style {:font-size :large}} "互动"] )}]
-     ]
-    [:> Box
-     (if (zero? @tab-select-val)
-       [:img {:width "100%"
-              :src "/imgs/intro.jpg"}]
-       [message]
-
-       )]]])
+   [video]
+   [tab]
+   [buttom]
+   [input]])
 
 (defn root-view []
   [:> ThemeProvider {:theme theme}

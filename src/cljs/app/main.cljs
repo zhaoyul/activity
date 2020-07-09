@@ -32,7 +32,7 @@
   [:> Box {:display :flex
            :height "100vh"
            :flex-direction "column"}
-   [:> Box {:height "300px"
+   [:> Box {:height (str video-height "px")
             :display :flex
             :width "100%"}
     [:> Box {:width "100%"}
@@ -46,8 +46,8 @@
        :controls true
        :playbackRates [1, 1.5, 2]
 
-       :sources [{;;:src "http://xhlive.3vyd.com/live/007.m3u8"
-                  :src "http://devimages.apple.com/iphone/samples/bipbop/bipbopall.m3u8"
+       :sources [{:src "http://xhlive.3vyd.com/live/007.m3u8"
+                  ;;:src "http://devimages.apple.com/iphone/samples/bipbop/bipbopall.m3u8"
                   :type 'application/x-mpegURL',
                   :label 'HLS1',
                   :withCredentials false,

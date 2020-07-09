@@ -3,6 +3,7 @@
    [kee-frame.core :as kf]
    [re-frame.core :as rf]
    [reagent.core :as r]
+   [app.socket-client :as client]
    ["@material-ui/core/styles" :refer [StylesProvider createMuiTheme ThemeProvider makeStyles]]
    ["@material-ui/core/Tabs" :default Tabs]
    ["@material-ui/core/Tab" :default Tab]
@@ -16,9 +17,7 @@
    ["@material-ui/icons/Directions" :default Directions]
    ["react-chat-elements" :refer [MessageBox MessageList]]
    ["videojs-for-react" :default VideoJsForReact]
-   #_[components.error-boundry :refer [catch]]
    ["@material-ui/core/CssBaseline" :default CssBaseline]))
-
 
 (def theme (createMuiTheme #js {:palette #js
                                 {;;:type "dark"

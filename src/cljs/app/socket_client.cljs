@@ -52,21 +52,70 @@
   [{:as ev-msg :keys [event]}]
   (->output! "Unhandled event: %s" event))
 
+(kf/reg-event-db
+ :init-msg
+ (fn [db [event]]
+   (prn "init......db with msg")
+   (assoc db :msgs event)))
+
+(rf/reg-sub
+ :all-msg
+ (fn [db]
+   (:msgs db)))
+
+(rf/reg-event-db
+ :add-msg
+ (fn [db [_ event]]
+   (prn "event:" event)
+   (assoc db :msgs
+          (conj (:msgs db )
+                event))))
+
+
+(defn give-me-all []
+  (chsk-send! [:user/get-all-msgs nil]
+              1000
+              (fn [cb-reply]
+                (when (cb-success? cb-reply)
+                  (if cb-reply
+                    (do
+                      (rf/dispatch [:init-msg cb-reply])
+                      (prn "success:" cb-reply))
+                    (do
+                      (prn "failed:" cb-reply)
+                      ))))))
+
+
 (defmethod -event-msg-handler :chsk/state
   [{:as ev-msg :keys [?data]}]
   (let [[old-state-map new-state-map] (have vector? ?data)]
     (if (:first-open? new-state-map)
-      (->output! "Channel socket successfully established!: %s" new-state-map)
+      (do
+        (prn "........................")
+        (->output! "Channel socket successfully established!: %s" new-state-map)
+        (give-me-all))
       (->output! "Channel socket state change: %s"              new-state-map))))
 
 (defmethod -event-msg-handler :chsk/recv
   [{:as ev-msg :keys [?data]}]
-  (->output! "Push event from server: %s" ?data))
+  (->output! "Push event from server: %s" ?data)
+  (let [[event-id event-body] ?data]
+    (case :msg/broad-cast
+      (rf/dispatch [:add-msg event-body]))))
 
 (defmethod -event-msg-handler :chsk/handshake
   [{:as ev-msg :keys [?data]}]
   (let [[?uid ?csrf-token ?handshake-data] ?data]
     (->output! "Handshake: %s" ?data)))
+
+
+;; :msg/broad-cast
+
+(defmethod -event-msg-handler :msg/broad-cast
+  [{:as ev-msg :keys [?data]}]
+  (let [[?uid ?csrf-token ?handshake-data] ?data]
+    (rf/dispatch [:add-msg ?data])))
+
 
 (defonce router_ (atom nil))
 (defn  stop-router! [] (when-let [stop-f @router_] (stop-f)))
@@ -107,139 +156,6 @@
                                  (rf/dispatch [fail-id cb-reply]))))))))
 
 
-
-(kf/reg-event-db
- :login-success
- (fn [db _]
-   (assoc db :login {:state :logged-in
-                     :busy? false
-                     :error nil
-                     :username "admin"} )))
-
-(kf/reg-event-fx
- :login-failed
- (fn [cofx _]
-   (js/alert "login failed...")))
-
-(kf/reg-event-db
- :logout-success
- (fn [db _]
-   (assoc db :login {:state :logged-out
-                     :busy? false
-                     :error nil
-                     :username nil} )))
-
-(kf/reg-event-fx
- :logout-failed
- (fn [cofx _]
-   (js/alert "logout failed...")))
-
-
-;; 阀
-
-
-;; 获取所有的阀的状态
-(kf/reg-event-fx
- :all-valve-status
- (fn [cofx _]
-   {:ws-event-cb [:user/get-all-valve-status nil :all-valve-statust-success nil]})
- )
-
-(kf/reg-event-db
- :all-valve-statust-success
- (fn [db [valve-status]] ;; FIXME: not tested yet.
-   (assoc-in db [:global-status :valves]  valve-status )))
-
-(comment
-  (rf/dispatch [:all-valve-status ])
-  )
-
-;; 打开阀门
-
-(kf/reg-event-fx
- :open-valve
- (fn [cofx [vs]]
-
-   {:db (update-in (:db cofx)
-                   [:global-status :valves]
-                   merge (zipmap vs (repeat (count vs) :open )))
-    :ws-event [:user/open-valve vs]}))
-
-
-(comment
-  (rf/dispatch [:open-valve [:v1 :v2] ])
-  )
-
-;; 关闭阀门
-(kf/reg-event-fx
- :close-valve
- (fn [cofx [vs]]
-
-   {:db (update-in (:db cofx)
-                   [:global-status :valves]
-                   merge (zipmap vs (repeat (count vs) :close )))
-    :ws-event [:user/close-valve vs]}))
-
-
-;; 关闭所有
-(kf/reg-event-fx
- :close-qualification-page
- (fn [cofx  _]
-   {:db (assoc-in (:db cofx)
-                  [:global-status :valves]
-                  {})
-    :syncdb nil
-    :ws-event [:user/close-all-valve]}))
-
-;; 回零
-;;:user/zero-pos
-(kf/reg-event-fx
- :zero-pos
- (fn [cofx  _]
-   {:ws-event [:user/zero-pos]}))
-
-(kf/reg-event-fx
- :send-program
- (fn [cofx [event]]
-   {:ws-event [:user/run-program event]}))
-
-
-;; 设置flowrate
-:send-flowrate
-
-(kf/reg-event-fx
- :send-flowrate
- (fn [cofx [event]]
-   {:ws-event [:user/send-flowrate event]}))
-
-
-(kf/reg-event-fx
- :break
- (fn [cofx _]
-   {:ws-event [:user/break nil]}))
-
-(kf/reg-event-fx
- :continue
- (fn [cofx _]
-   {:ws-event [:user/continue nil]}))
-
-#_(kf/reg-event-fx
-   :login-test
-   (fn [cofx [[msg-id event ]]]
-     {:ws-event-cb [msg-id event :login-success :login-failed]})
-   )
-
-(comment
-
-  (kf/reg-event-fx
-   :test-evt
-   (fn [cofx [[msg-id event]]]
-     (prn "msg-id:" msg-id)
-     {:ws-event [msg-id event]})
-   )
-
-
-  )
 
 
 #_(rf/reg-fx

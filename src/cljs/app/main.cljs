@@ -4,6 +4,7 @@
    [re-frame.core :as rf]
    [reagent.core :as r]
    [app.socket-client :as client]
+   [taoensso.sente  :as sente  :refer (cb-success?)]
    ["@material-ui/core/styles" :refer [StylesProvider createMuiTheme ThemeProvider makeStyles]]
    ["@material-ui/core/Tabs" :default Tabs]
    ["@material-ui/core/Tab" :default Tab]
@@ -11,10 +12,13 @@
    ["@material-ui/core/Button" :default Button]
    ["@material-ui/core/Paper" :default Paper]
    ["@material-ui/core/Input" :default Input]
+   ["@material-ui/core/InputBase" :default InputBase]
    ["@material-ui/core/Divider" :default Divider]
    ["@material-ui/core/IconButton" :default IconButton]
    ["@material-ui/icons/Menu" :default Menu]
    ["@material-ui/icons/Directions" :default Directions]
+   ["@material-ui/icons/Search" :default SearchIcon]
+   ["@material-ui/icons/Directions" :default DirectionsIcon]
    ["react-chat-elements" :refer [MessageBox MessageList]]
    ["videojs-for-react" :default VideoJsForReact]
    ["@material-ui/core/CssBaseline" :default CssBaseline]))
@@ -23,10 +27,83 @@
                                 {;;:type "dark"
                                  }}) )
 
+(def user-nname (str "user-" (rand-int 10000)))
+
+(def useStyles
+  (makeStyles
+   (fn [theme]
+     (clj->js {:root {:padding "2px 4px",:display "flex",:alignItems "center",:width 400,},
+               :input {:marginLeft (.spacing theme 1) :flex 1,},
+               :iconButton {:padding 10,},
+               :divider {:height 28,:margin 4,}}))))
+
 (def tab-select-val  (r/atom 0))
 
 (def screen-width (.. js/window -screen -width))
 (def video-height (int (* screen-width (/ 9 16) )))
+
+
+
+(def data [{:position "right"
+            :type "text"
+            :text "变态反应科中的“变态”是指免疫机制失去常态，这个科室专门治疗呼吸系统、皮肤、五官、心血管、消化系统等器官的过敏性疾病，涉及过敏性鼻炎、儿童哮喘、过敏性皮肤病、荨麻疹、过敏性紫癜、花粉症等数十种疾病。"
+            :date (js/Date.)}
+           {:position "right"
+            :type "text"
+            :text "主要治疗呼吸系统、皮肤、心血管、消化系统等器官的过敏性疾病，涉及过敏性鼻炎、儿童哮喘、过敏性皮肤病、荨麻疹、过敏性紫癜、花粉症等数十种疾病。"
+            :date (js/Date.)}
+           {:position "left"
+            :type "text"
+            :text "Lorem ipsum dolor sit amet, consectetur adipisicing elit"
+            :date (js/Date.)}])
+
+(defn msg->data [msgs]
+  (mapv (fn [msg]
+          {:position "right"
+           :type "text"
+           :text msg
+           :date (js/Date.)})
+        (mapv :msg msgs)))
+
+(def current-msg (r/atom ""))
+
+
+
+
+(defn input-send []
+  (r/as-element
+   (let [classes (useStyles) ]
+     (js/console.log classes)
+     [:> Paper {:component "form"
+                :class-name (.-root classes)}
+      [:> InputBase {:placeholder "请输入您的发言"
+                     :on-change (fn [event ]
+                                  (prn "....")
+                                  (reset! current-msg (.. event -target -value) ))
+                     :class-name (.-input classes)}]
+
+      [:> Divider {:orientation "vertical"
+                   :class-name (.-divider classes)}]
+      [:> Button {:color "primary"
+                  :aria-label "directions"
+                  :onClick (fn []
+                             (prn "发出新消息...")
+                             (when-not (empty? @current-msg)
+                               (client/chsk-send! [:user/new-msg @current-msg])
+                               (reset! current-msg "")))}
+       "提交"
+       [:> DirectionsIcon]]])))
+
+
+(defn message []
+  (fn []
+    [:> Box
+     [:> MessageList
+      {:className "message-list"
+       :lockable true
+       :toBottomHeight "100%"
+       :dataSource (msg->data @(rf/subscribe [:all-msg]))}]
+     [:> input-send]]))
 
 (defn home []
   [:> Box {:display :flex
@@ -58,40 +135,17 @@
               :on-change (fn [_ new-val]
                            (reset! tab-select-val new-val))}
      [:> Tab {:style {:width "50%"}
-              :label (r/as-element [:div {:style {:font-size :large}} "互动"] )}
-      [:> Box
-       "hello"]]
+              :label (r/as-element [:div {:style {:font-size :large}} "会议详情"])}]
      [:> Tab {:style {:width "50%"}
-              :label (r/as-element [:div {:style {:font-size :large}} "会议详情"])}
-      ]]
+              :label (r/as-element [:div {:style {:font-size :large}} "互动"] )}]
+     ]
     [:> Box
      (if (zero? @tab-select-val)
-       [:> Box
-        [:> MessageList
-         {:className "message-list"
-          :lockable true
-          :toBottomHeight "100%"
-          :dataSource [{
-                        :position "right"
-                        :type "text"
-                        :text "变态反应科中的“变态”是指免疫机制失去常态，这个科室专门治疗呼吸系统、皮肤、五官、心血管、消化系统等器官的过敏性疾病，涉及过敏性鼻炎、儿童哮喘、过敏性皮肤病、荨麻疹、过敏性紫癜、花粉症等数十种疾病。"
-                        :date (js/Date.)
-                        }
-                       {
-                        :position "right"
-                        :type "text"
-                        :text "主要治疗呼吸系统、皮肤、心血管、消化系统等器官的过敏性疾病，涉及过敏性鼻炎、儿童哮喘、过敏性皮肤病、荨麻疹、过敏性紫癜、花粉症等数十种疾病。"
-                        :date (js/Date.)
-                        }
-                       {
-                        :position "left"
-                        :type "text"
-                        :text "Lorem ipsum dolor sit amet, consectetur adipisicing elit"
-                        :date (js/Date.)
-                        }]}]]
        [:img {:width "100%"
-              :src "/imgs/intro.jpg"}])
-     ]]])
+              :src "/imgs/intro.jpg"}]
+       [message]
+
+       )]]])
 
 (defn root-view []
   [:> ThemeProvider {:theme theme}

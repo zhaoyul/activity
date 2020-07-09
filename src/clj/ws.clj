@@ -12,18 +12,23 @@
    [org.httpkit.server :as http-kit]
    [taoensso.sente.server-adapters.http-kit :refer (get-sch-adapter)]))
 
-(timbre/set-level! :info) ; Uncomment for more logging
+(timbre/set-level! :debug) ; Uncomment for more logging
 (reset! sente/debug-mode?_ true) ; Uncomment for extra debug info
+
+(def messages (atom [{:id 1
+                      :msg "消息1"}
+                     {:id 2
+                      :msg "消息2"}]))
 
 (let [packer                               :edn
       chsk-server                          (sente/make-channel-socket-server!
                                             (get-sch-adapter) {:packer packer
                                                                :csrf-token-fn nil})
 
-      {:keys [ch-recv         ;; 接收消息的channel
-              send-fn         ;; server -> client
-              connected-uids  ;; 已经连接的用户, 现在看起来是空的
-              ajax-post-fn    ;; Post Ajax func
+      {:keys [ch-recv        ;; 接收消息的channel
+              send-fn        ;; server -> client
+              connected-uids ;; 已经连接的用户, 现在看起来是空的
+              ajax-post-fn   ;; Post Ajax func
               ajax-get-or-ws-handshake-fn]} chsk-server]
 
   (def ring-ajax-post                ajax-post-fn)
@@ -101,6 +106,14 @@
 
 (defonce broadcast-enabled?_ (atom true))
 
+(defn broad-cast-new-msg [msg]
+  (let [uids (:any @connected-uids)]
+    (debugf "Broadcasting server>user: %s uids" (count uids))
+    (doseq [uid uids]
+      (chsk-send! uid
+                  [:msg/broad-cast
+                   msg]))) )
+
 (defn start-example-broadcaster!
   "As an example of server>user async pushes, setup a loop to broadcast an
   event to all connected users every 10 seconds"
@@ -141,7 +154,7 @@
   [{:as ev-msg :keys [event id ?data ring-req ?reply-fn send-fn]}]
   (let [session (:session ring-req)
         uid     (:uid     session)]
-    (debugf "Unhandled event: %s session:%s" event session )
+    (infof "Unhandled event: %s session:%s" event session )
     (when ?reply-fn
       (?reply-fn {:umatched-event-as-echoed-from-server event}))))
 
@@ -187,10 +200,36 @@
 
 (comment
   (start!)
-  (test-fast-server>user-pushes))
+  (test-fast-server>user-pushes)
+  )
 
 (defn send-msg [msg]
   (chsk-send! :taoensso.sente/nil-uid msg))
+
+(defn get-all-msgs []
+  (chsk-send! :taoensso.sente/nil-uid [] ))
+
+(defmethod -event-msg-handler :user/get-all-msgs
+  [{:keys [?reply-fn event]}]
+  (prn "返回现在全部....")
+  (?reply-fn @messages ))
+
+
+
+(defn new-msg [msg]
+  (let [new-id (->> @messages
+                    (map :id)
+                    (apply max)
+                    inc)]
+    {:id new-id
+     :msg msg}))
+
+
+(defmethod -event-msg-handler :user/new-msg
+  [{:keys [?reply-fn event]}]
+  (prn "new-msg" event)
+  (swap! messages conj (new-msg (second event)))
+  (broad-cast-new-msg (new-msg (second event))))
 
 (defn -main []
   (start!)

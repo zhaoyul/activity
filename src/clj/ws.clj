@@ -10,7 +10,8 @@
    [taoensso.timbre    :as timbre :refer (tracef debugf infof warnf errorf)]
    [taoensso.sente     :as sente]
    [org.httpkit.server :as http-kit]
-   [taoensso.sente.server-adapters.http-kit :refer (get-sch-adapter)]))
+   [taoensso.sente.server-adapters.http-kit :refer (get-sch-adapter)])
+  (:gen-class))
 
 (timbre/set-level! :debug) ; Uncomment for more logging
 (reset! sente/debug-mode?_ true) ; Uncomment for extra debug info
@@ -183,7 +184,7 @@
 (defn  stop-web-server! [] (when-let [stop-fn @web-server_] (stop-fn)))
 (defn start-web-server! [& [port]]
   (stop-web-server!)
-  (let [port 7000
+  (let [port 7104
         ring-handler (var main-ring-handler)
 
         [port stop-fn]
@@ -231,7 +232,10 @@
   (swap! messages conj (new-msg (second event)))
   (broad-cast-new-msg (new-msg (second event))))
 
-(defn -main []
-  (start!)
-  (println "启动ws....")
-  )
+(defn -main [& args]
+  (start!))
+
+#_(defn -main [& args]
+    (start!)
+    (println "启动ws....")
+    )

@@ -14,11 +14,11 @@
                  [com.taoensso/sente "1.15.0"]
                  [ring/ring-defaults "0.3.2"]
                  [compojure          "1.6.1"]
-                 [com.fazecast/jSerialComm "[2.0.0,3.0.0)"]
                  [javax.xml.bind/jaxb-api "2.3.1"]
                  [org.clojure/core.async "1.2.603"]]
   :repl-options {:init-ns ws}
+  :target-path "target/%s/"
   :main ws
-  :omit-source true
-  :jar-name "chat-server.jar"
-  :profiles {:uberjar {:aot :all}})
+  :profiles {:uberjar {:aot :all
+                       :omit-source true
+                       :uberjar-name "chat-server.jar"}})

@@ -7,6 +7,7 @@
    [taoensso.sente  :as sente  :refer (cb-success?)]))
 
 
+
 ;; ws 处理
 
 (timbre/set-level! :debug)
@@ -26,7 +27,9 @@
       (sente/make-channel-socket-client!
        "/chsk"                    ; Must match server Ring routing URL
        ""
-       {:port 7000
+       {:protocol :https
+        :host "xhliveactivity.3vyd.com"
+        :port 443
         :type   rand-chsk-type
         :packer packer})]
 

@@ -5,6 +5,7 @@
    [reagent.core :as r]
    [app.socket-client :as client]
    [taoensso.sente  :as sente  :refer (cb-success?)]
+   ["video-react" :refer [Player] ]
    ["@material-ui/core/styles" :refer [StylesProvider createMuiTheme ThemeProvider makeStyles]]
    ["@material-ui/core/Tabs" :default Tabs]
    ["@material-ui/core/Tab" :default Tab]
@@ -110,22 +111,25 @@
            :display :flex
            :width "100%"}
    [:> Box {:width "100%"}
-    [:> VideoJsForReact
-     {:stype {:width "100%"}
-      :sourceChanged #(js/console.log %)
-      :onReady #(js/console.log "准备完毕" %)
-      :preload "auto"
-      :width (.. js/window -screen -width)
-      :autoplay true
-      :controls true
-      :playbackRates [1, 1.5, 2]
+    [:> Player {:playsInline true
+                :src "http://devimages.apple.com/iphone/samples/bipbop/bipbopall.m3u8"}
+     ]
+    #_[:> VideoJsForReact
+       {:stype {:width "100%"}
+        :sourceChanged #(js/console.log %)
+        :onReady #(js/console.log "准备完毕" %)
+        :preload "auto"
+        :width (.. js/window -screen -width)
+        :autoplay true
+        :controls true
+        :playbackRates [1, 1.5, 2]
 
-      :sources [{:src "http://xhlive.3vyd.com/live/007.m3u8"
-                 ;;:src "http://devimages.apple.com/iphone/samples/bipbop/bipbopall.m3u8"
-                 :type 'application/x-mpegURL',
-                 :label 'HLS1',
-                 :withCredentials false,
-                 :res 960}]}]]])
+        :sources [{ ;;:src "http://xhlive.3vyd.com/live/007.m3u8"
+                   :src "http://devimages.apple.com/iphone/samples/bipbop/bipbopall.m3u8"
+                   :type 'application/x-mpegURL',
+                   :label 'HLS1',
+                   :withCredentials false,
+                   :res 960}]}]]])
 
 (defn tab []
   [:> Box {:flex "1 0 auto"

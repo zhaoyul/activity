@@ -1,0 +1,3 @@
+* 项目启动
+  - 启动shadow-cljs: 8000端口作为web服务的端口, 同时从7000端口请求消息的ws服务
+  - 启动websocket : lein 中启动ws namespace (start!)函数启动7000 的httpkit的ws服务

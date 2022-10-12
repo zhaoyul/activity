@@ -8,7 +8,7 @@
     "react-chat-elements": "^10.9.2",
     "react-dom": "16.13.0",
     "video-react": "^0.14.1",
-    "video.js": "^7.8.3",
+    "video.js": "^7.20.3",
     "videojs-for-react": "0.0.3"
   }
 }
